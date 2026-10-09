@@ -27,67 +27,73 @@ if (!is_array($data)) {
 
 $email = $data["email"] ?? null;
 $password = $data["password"] ?? null;
-$matricNo = $data["matric_no"] ?? null;
-$name = $data["name"] ?? null;
+$matricNumber = $data["matric_number"] ?? null;
+$firstName = $data["first_name"] ?? null;
+$lastName = $data["last_name"] ?? null;
+$phone = $data["phone"] ?? null;
 $department = $data["department"] ?? null;
 $levelValue = $data["level"] ?? null;
+$gender = $data["gender"] ?? null;
 
 if (
     !is_string($email)
     || !is_string($password)
-    || !is_string($matricNo)
-    || !is_string($name)
-    || ($department !== null && !is_string($department))
+    || !is_string($matricNumber)
+    || !is_string($firstName)
+    || !is_string($lastName)
+    || !is_string($department)
+    || !is_string($gender)
+    || ($phone !== null && !is_string($phone))
 ) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
-        "message" => "Email, password, matric number, and name are required as strings."
+        "message" => "Email, password, matric number, first name, last name, department, level, and gender are required."
     ]);
     exit;
 }
 
 $email = strtolower(trim($email));
-$matricNo = trim($matricNo);
-$name = trim($name);
-$department = $department === null ? null : trim($department);
+$matricNumber = trim($matricNumber);
+$firstName = trim($firstName);
+$lastName = trim($lastName);
+$phone = $phone === null ? null : trim($phone);
+$department = trim($department);
 
 if (
     filter_var($email, FILTER_VALIDATE_EMAIL) === false
     || strlen($email) > 100
     || strlen($password) < 8
     || strlen($password) > 72
-    || $matricNo === ""
-    || strlen($matricNo) > 30
-    || $name === ""
-    || strlen($name) > 100
-    || ($department !== null && strlen($department) > 100)
+    || $matricNumber === ""
+    || strlen($matricNumber) > 30
+    || $firstName === ""
+    || strlen($firstName) > 50
+    || $lastName === ""
+    || strlen($lastName) > 50
+    || $department === ""
+    || strlen($department) > 100
+    || ($phone !== null && strlen($phone) > 20)
+    || !in_array($gender, ["Male", "Female"], true)
 ) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
-        "message" => "Please provide valid registration details. Passwords must be 8-72 characters."
+        "message" => "Please provide valid registration details. Passwords must be 8-72 characters and gender must be Male or Female."
     ]);
     exit;
 }
 
-$level = null;
-if ($levelValue !== null && $levelValue !== "") {
-    $validatedLevel = filter_var($levelValue, FILTER_VALIDATE_INT);
-    if (
-        $validatedLevel === false
-        || $validatedLevel < 1
-        || $validatedLevel > 2147483647
-    ) {
-        http_response_code(400);
-        echo json_encode([
-            "success" => false,
-            "message" => "Level must be a positive integer."
-        ]);
-        exit;
-    }
-
-    $level = $validatedLevel;
+$level = is_int($levelValue) || is_string($levelValue)
+    ? filter_var($levelValue, FILTER_VALIDATE_INT)
+    : false;
+if ($level === false || $level < 1 || $level > 2147483647) {
+    http_response_code(400);
+    echo json_encode([
+        "success" => false,
+        "message" => "Level must be a positive integer."
+    ]);
+    exit;
 }
 
 try {
@@ -96,10 +102,13 @@ try {
     $userId = $student->register(
         $email,
         $password,
-        $matricNo,
-        $name,
-        $department === "" ? null : $department,
-        $level
+        $matricNumber,
+        $firstName,
+        $lastName,
+        $phone === "" ? null : $phone,
+        $department,
+        $level,
+        $gender
     );
 } catch (PDOException $error) {
     if (

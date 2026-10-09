@@ -12,10 +12,13 @@ class Student
     public function register(
         string $email,
         string $password,
-        string $matricNo,
-        string $name,
-        ?string $department,
-        ?int $level
+        string $matricNumber,
+        string $firstName,
+        string $lastName,
+        ?string $phone,
+        string $department,
+        int $level,
+        string $gender
     ): int {
         $this->db->beginTransaction();
 
@@ -31,15 +34,25 @@ class Student
 
             $userId = (int) $this->db->lastInsertId();
             $studentStatement = $this->db->prepare(
-                "INSERT INTO students (user_id, matric_no, name, department, level)
-                 VALUES (:user_id, :matric_no, :name, :department, :level)"
+                "INSERT INTO students (
+                    user_id, matric_number, first_name, last_name, email,
+                    phone, department, level, gender
+                 )
+                 VALUES (
+                    :user_id, :matric_number, :first_name, :last_name, :email,
+                    :phone, :department, :level, :gender
+                 )"
             );
             $studentStatement->execute([
                 "user_id" => $userId,
-                "matric_no" => $matricNo,
-                "name" => $name,
+                "matric_number" => $matricNumber,
+                "first_name" => $firstName,
+                "last_name" => $lastName,
+                "email" => $email,
+                "phone" => $phone,
                 "department" => $department,
-                "level" => $level
+                "level" => $level,
+                "gender" => $gender
             ]);
 
             $this->db->commit();

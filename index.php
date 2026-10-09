@@ -39,6 +39,42 @@ $routes = [
     "/api/auth/logout" => [
         "method" => "POST",
         "file" => __DIR__ . "/api/auth/logout.php"
+    ],
+    "/api/admin/hostels" => [
+        "method" => "POST",
+        "file" => __DIR__ . "/api/admin/hostels.php"
+    ],
+    "/api/admin/dashboard" => [
+        "method" => "GET",
+        "file" => __DIR__ . "/api/admin/dashboard.php"
+    ],
+    "/api/admin/rooms" => [
+        "method" => "POST",
+        "file" => __DIR__ . "/api/admin/rooms.php"
+    ],
+    "/api/admin/allocation-period" => [
+        "method" => "PUT",
+        "file" => __DIR__ . "/api/admin/allocation-period.php"
+    ],
+    "/api/hostels" => [
+        "method" => "GET",
+        "file" => __DIR__ . "/api/hostels/list.php"
+    ],
+    "/api/rooms/availability" => [
+        "method" => "GET",
+        "file" => __DIR__ . "/api/rooms/availability.php"
+    ],
+    "/api/allocations/create" => [
+        "method" => "POST",
+        "file" => __DIR__ . "/api/allocations/create.php"
+    ],
+    "/api/payments/process" => [
+        "method" => "POST",
+        "file" => __DIR__ . "/api/payments/process.php"
+    ],
+    "/api/payments/verify" => [
+        "method" => "POST",
+        "file" => __DIR__ . "/api/payments/verify.php"
     ]
 ];
 

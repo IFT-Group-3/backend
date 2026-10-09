@@ -1,0 +1,1183 @@
+openapi: 3.0.3
+info:
+  title: Hostel Backend API
+  version: 1.0.0
+  description: |
+    OpenAPI documentation for the hostel registration, administration,
+    room allocation, and payment endpoints.
+
+    Authentication uses a PHP session cookie. Sign in with `/api/auth/login`
+    and send the returned `PHPSESSID` cookie with subsequent requests.
+    Replace the development server URL below with the deployed API base URL.
+servers:
+  - url: http://localhost/hostel-backend
+    description: Local XAMPP development server
+tags:
+  - name: Authentication
+  - name: Administration
+  - name: Hostels
+  - name: Rooms
+  - name: Allocations
+  - name: Payments
+paths:
+  /api/auth/bootstrap-admin:
+    post:
+      tags: [Authentication]
+      summary: Create the first administrator
+      description: |
+        Localhost-only, one-time bootstrap. Returns 409 once an administrator
+        already exists. Remove or disable this endpoint after initial setup.
+      operationId: bootstrapAdmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+            example:
+              email: admin@example.com
+              password: securepass123
+      responses:
+        '201':
+          description: First administrator created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Request did not originate from localhost
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: An administrator already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a student
+      operationId: registerStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRegistration'
+            example:
+              email: student@example.com
+              password: securepass123
+              matric_number: STU001
+              first_name: Alex
+              last_name: Student
+              phone: '08012345678'
+              department: Computer Science
+              level: 200
+              gender: Female
+      responses:
+        '201':
+          description: Student account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email or matric number is already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/auth/admin/register:
+    post:
+      tags: [Authentication]
+      summary: Register an administrator
+      description: Requires an authenticated administrator session.
+      operationId: registerAdmin
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+            example:
+              email: new-admin@example.com
+              password: securepass123
+      responses:
+        '201':
+          description: Administrator account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: An administrator session is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email is already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Log in
+      description: |
+        On success, starts a PHP session and returns its `PHPSESSID` cookie.
+        Send that cookie on subsequent protected requests.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+            example:
+              email: student@example.com
+              password: securepass123
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: PHP session cookie; retain and send it on later requests.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Log out
+      description: Destroys the current session when one is present.
+      operationId: logout
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+  /api/admin/dashboard:
+    get:
+      tags: [Administration]
+      summary: Get the admin dashboard
+      description: |
+        Returns summary counts and paginated hostels, rooms, beds, students,
+        admins, allocations, and payments. Password hashes are not returned.
+      operationId: getAdminDashboard
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number applied to each collection.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000000
+            default: 1
+        - name: per_page
+          in: query
+          description: Number of rows per collection.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: An administrator session is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/admin/hostels:
+    post:
+      tags: [Administration, Hostels]
+      summary: Create a hostel
+      description: |
+        Requires an administrator session. Use multipart form data. Images are
+        optional and must be JPEG, PNG, or WebP, up to 5 MB.
+      operationId: createHostel
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateHostelRequest'
+      responses:
+        '201':
+          description: Hostel created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateHostelResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: An administrator session is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/admin/rooms:
+    post:
+      tags: [Administration, Rooms]
+      summary: Create a room and its bed spaces
+      description: |
+        Requires an administrator session. Creates one bed space per occupant
+        and updates the hostel room count. Room location is unique within a
+        hostel.
+      operationId: createRoom
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+            example:
+              hostel_id: 1
+              building_code: C
+              floor_number: 17
+              room_number: C2
+              max_occupants: 4
+              price_per_occupant: '75000.00'
+      responses:
+        '201':
+          description: Room and generated beds created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRoomResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: An administrator session is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Hostel not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Room location already exists in this hostel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/admin/allocation-period:
+    put:
+      tags: [Administration, Allocations]
+      summary: Set the system-wide allocation period
+      description: |
+        Requires an administrator session. The start date must be today or
+        later; the end date must be on or after the start date.
+      operationId: setAllocationPeriod
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllocationPeriodRequest'
+            example:
+              start_date: '2027-01-10'
+              end_date: '2027-05-31'
+      responses:
+        '200':
+          description: Allocation period saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllocationPeriodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: An administrator session is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/hostels:
+    get:
+      tags: [Hostels]
+      summary: List hostels available to the student
+      description: |
+        Requires a student session. Returns available hostels that match the
+        student's registered gender, along with all mixed hostels.
+      operationId: listHostels
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Eligible available hostels
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostelListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Student access or a valid student profile is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/rooms/availability:
+    get:
+      tags: [Rooms]
+      summary: List available rooms and bed spaces
+      description: |
+        Requires a student session and a configured allocation period.
+        Results only include available rooms in hostels eligible for the
+        student's gender; full rooms are omitted.
+      operationId: getRoomAvailability
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Available rooms and beds for the configured period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomAvailabilityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Student access or a valid student profile is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Allocation period is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/allocations/create:
+    post:
+      tags: [Allocations]
+      summary: Reserve the next available bed
+      description: |
+        Requires a student session. Assigns a bed for the system-wide
+        allocation dates and places a 30-minute pending hold while awaiting
+        payment. A student may not have another active overlapping allocation.
+      operationId: createAllocation
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAllocationRequest'
+            example:
+              room_id: 1
+      responses:
+        '200':
+          description: Bed reserved pending payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAllocationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Student access or a valid student profile is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Room does not exist or is unavailable to the student
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Allocation period, bed availability, or existing allocation conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/payments/process:
+    post:
+      tags: [Payments]
+      summary: Start Paystack checkout
+      description: |
+        Requires a student session and a configured `PAYSTACK_SECRET_KEY`.
+        The allocation must belong to the student and have an active pending
+        reservation.
+      operationId: initializePayment
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessPaymentRequest'
+            example:
+              allocation_id: 1
+      responses:
+        '200':
+          description: Paystack checkout initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessPaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Student access is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Reservation is inactive or checkout already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Payment initialization failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Payment service is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/payments/verify:
+    post:
+      tags: [Payments]
+      summary: Verify a Paystack payment
+      description: |
+        Requires a student session and a configured `PAYSTACK_SECRET_KEY`.
+        A successful verification confirms the bed allocation only after the
+        payment reference, NGN currency, and amount are checked. Refunds are
+        not processed automatically when `refund_required` is true.
+      operationId: verifyPayment
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyPaymentRequest'
+            example:
+              reference: hostel_0123456789abcdef0123456789abcdef
+      responses:
+        '200':
+          description: Payment verified and allocation confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyPaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          description: Paystack did not confirm payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Student access is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Payment reference does not belong to the student or was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Payment mismatch or successful payment requiring manual refund
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundRequiredResponse'
+        '502':
+          description: Payment verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Payment service is not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+      description: PHP session cookie returned by `/api/auth/login`.
+  responses:
+    BadRequest:
+      description: Request body or fields are invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    MethodNotAllowed:
+      description: HTTP method not allowed for this endpoint
+      headers:
+        Allow:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: Server could not complete the request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        message:
+          type: string
+        refund_required:
+          type: boolean
+        reference:
+          type: string
+    MessageResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Logout successful.
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          format: password
+    StudentRegistration:
+      type: object
+      required:
+        - email
+        - password
+        - matric_number
+        - first_name
+        - last_name
+        - department
+        - level
+        - gender
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          format: password
+        matric_number:
+          type: string
+          minLength: 1
+          maxLength: 30
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        phone:
+          type: string
+          maxLength: 20
+          nullable: true
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+        level:
+          type: integer
+          minimum: 1
+        gender:
+          type: string
+          enum: [Male, Female]
+    User:
+      type: object
+      required: [id, email, role]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [student, admin]
+    RegistrationResponse:
+      type: object
+      required: [success, message, user]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    LoginResponse:
+      type: object
+      required: [success, message, user]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Login successful.
+        user:
+          $ref: '#/components/schemas/User'
+    Hostel:
+      type: object
+      properties:
+        hostel_id:
+          type: integer
+        hostel_name:
+          type: string
+        hostel_type:
+          type: string
+          enum: [Male, Female, Mixed]
+        location:
+          type: string
+        description:
+          type: string
+          nullable: true
+        total_rooms:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum: [Available, Unavailable]
+        image_path:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    HostelListResponse:
+      type: object
+      required: [success, hostels]
+      properties:
+        success:
+          type: boolean
+          example: true
+        hostels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hostel'
+    CreateHostelRequest:
+      type: object
+      required: [hostel_name, hostel_type, location]
+      properties:
+        hostel_name:
+          type: string
+          maxLength: 100
+        hostel_type:
+          type: string
+          enum: [Male, Female, Mixed]
+        location:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+        total_rooms:
+          type: integer
+          minimum: 0
+          default: 0
+        status:
+          type: string
+          enum: [Available, Unavailable]
+          default: Available
+        image:
+          type: string
+          format: binary
+          description: JPEG, PNG, or WebP image up to 5 MB.
+    CreateHostelResponse:
+      type: object
+      required: [success, message, hostel]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        hostel:
+          $ref: '#/components/schemas/Hostel'
+    CreateRoomRequest:
+      type: object
+      required:
+        - hostel_id
+        - building_code
+        - floor_number
+        - room_number
+        - max_occupants
+        - price_per_occupant
+      properties:
+        hostel_id:
+          type: integer
+          minimum: 1
+        building_code:
+          type: string
+          pattern: '^[A-Za-z0-9]{1,10}$'
+        floor_number:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Use 0 for ground floor.
+        room_number:
+          type: string
+          minLength: 1
+          maxLength: 30
+        max_occupants:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        price_per_occupant:
+          type: string
+          pattern: '^\d{1,8}(\.\d{1,2})?$'
+          example: '75000.00'
+          description: Positive price in NGN.
+    CreateRoomResponse:
+      type: object
+      required: [success, message, room]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        room:
+          type: object
+          required:
+            - room_id
+            - hostel_id
+            - building_code
+            - floor_number
+            - room_number
+            - bed_numbers
+            - max_occupants
+            - price_per_occupant
+            - currency
+          properties:
+            room_id:
+              type: integer
+            hostel_id:
+              type: integer
+            building_code:
+              type: string
+            floor_number:
+              type: integer
+            room_number:
+              type: string
+            bed_numbers:
+              type: array
+              items:
+                type: string
+            max_occupants:
+              type: integer
+            price_per_occupant:
+              type: string
+              example: '75000.00'
+            currency:
+              type: string
+              enum: [NGN]
+    AllocationPeriodRequest:
+      type: object
+      required: [start_date, end_date]
+      properties:
+        start_date:
+          type: string
+          format: date
+          description: Must be today or a future date.
+        end_date:
+          type: string
+          format: date
+          description: Must be on or after start_date.
+    AllocationPeriodResponse:
+      type: object
+      required: [success, message, allocation_period]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        allocation_period:
+          $ref: '#/components/schemas/AllocationPeriodRequest'
+    RoomAvailability:
+      type: object
+      properties:
+        room_id:
+          type: integer
+        hostel_id:
+          type: integer
+        hostel_name:
+          type: string
+        hostel_type:
+          type: string
+          enum: [Male, Female, Mixed]
+        building_code:
+          type: string
+        floor_number:
+          type: integer
+        room_number:
+          type: string
+        max_occupants:
+          type: integer
+        price_per_occupant:
+          type: string
+        currency:
+          type: string
+          enum: [NGN]
+        total_beds:
+          type: integer
+        occupied_spaces:
+          type: integer
+        available_spaces:
+          type: integer
+        available_bed_numbers:
+          type: array
+          items:
+            type: string
+    RoomAvailabilityResponse:
+      type: object
+      required: [success, allocation_period, rooms]
+      properties:
+        success:
+          type: boolean
+          example: true
+        allocation_period:
+          $ref: '#/components/schemas/AllocationPeriodRequest'
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomAvailability'
+    CreateAllocationRequest:
+      type: object
+      required: [room_id]
+      properties:
+        room_id:
+          type: integer
+          minimum: 1
+    CreateAllocationResponse:
+      type: object
+      required: [success, message, allocation]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        allocation:
+          type: object
+          properties:
+            allocation_id:
+              type: integer
+            room_id:
+              type: integer
+            bed_id:
+              type: integer
+            bed_number:
+              type: string
+            start_date:
+              type: string
+              format: date
+            end_date:
+              type: string
+              format: date
+            status:
+              type: string
+              enum: [Pending]
+            expires_in_minutes:
+              type: integer
+              enum: [30]
+            amount:
+              type: string
+            currency:
+              type: string
+              enum: [NGN]
+    ProcessPaymentRequest:
+      type: object
+      required: [allocation_id]
+      properties:
+        allocation_id:
+          type: integer
+          minimum: 1
+    ProcessPaymentResponse:
+      type: object
+      required: [success, message, payment]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        payment:
+          type: object
+          properties:
+            reference:
+              type: string
+              pattern: '^hostel_[a-f0-9]{32}$'
+            amount_kobo:
+              type: integer
+              format: int64
+            currency:
+              type: string
+              enum: [NGN]
+            authorization_url:
+              type: string
+              format: uri
+            access_code:
+              type: string
+              nullable: true
+    VerifyPaymentRequest:
+      type: object
+      required: [reference]
+      properties:
+        reference:
+          type: string
+          pattern: '^hostel_[a-f0-9]{32}$'
+    VerifyPaymentResponse:
+      type: object
+      required:
+        - success
+        - message
+        - allocation_id
+        - bed_id
+        - bed_number
+        - start_date
+        - end_date
+        - status
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        allocation_id:
+          type: integer
+        bed_id:
+          type: integer
+        bed_number:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [Confirmed]
+    RefundRequiredResponse:
+      type: object
+      required: [success, message, refund_required, reference]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        message:
+          type: string
+        refund_required:
+          type: boolean
+          enum: [true]
+        reference:
+          type: string
+    AdminDashboardResponse:
+      type: object
+      required:
+        - success
+        - allocation_period
+        - summary
+        - pagination
+        - hostels
+        - rooms
+        - beds
+        - students
+        - admins
+        - allocations
+        - payments
+      properties:
+        success:
+          type: boolean
+          example: true
+        allocation_period:
+          allOf:
+            - $ref: '#/components/schemas/AllocationPeriodRequest'
+          nullable: true
+        summary:
+          type: object
+          description: Numeric dashboard summary, including counts and paid totals.
+          additionalProperties: true
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            totals:
+              type: object
+              additionalProperties:
+                type: integer
+        hostels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hostel'
+        rooms:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        beds:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        students:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        admins:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        allocations:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        payments:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
