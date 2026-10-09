@@ -70,9 +70,12 @@ allows access.
   match.
 - If Paystack confirms a payment after its 30-minute reservation has expired,
   the API reports `refund_required: true`; refund processing is not automated.
-- Configure the `PAYSTACK_SECRET_KEY` environment variable for the Apache/PHP
-  process before using checkout. Never send the secret key to the client or
-  commit it to the repository.
+- Configure `PAYSTACK_SECRET_KEY` in the PHP server environment before using
+  checkout. If your host does not allow environment variables, copy
+  `config/secrets.example.php` to `config/secrets.php` on the server and replace
+  its placeholder with your rotated Paystack secret key. `config/secrets.php`
+  is git-ignored, and direct HTTP access to the `config/` directory is denied.
+  Do not put the key in frontend code, a public `.env` file, or the repository.
 - Run `database/migrations/002_create_hostels_table.sql` first (if not already
   applied), then `database/migrations/003_create_rooms_allocations_payments.sql`,
   followed by `database/migrations/004_add_bed_spaces_and_allocation_dates.sql`

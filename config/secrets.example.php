@@ -1,0 +1,5 @@
+<?php
+
+return [
+    "PAYSTACK_SECRET_KEY" => "sk_test_0becbd5ab10238eafa8d5b9e8f5b767692260c95"
+];

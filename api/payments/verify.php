@@ -4,6 +4,7 @@ header("Content-Type: application/json");
 
 require_once __DIR__ . "/../../middlewares/student.php";
 require_once __DIR__ . "/../../config/Database.php";
+require_once __DIR__ . "/../../config/paystack.php";
 require_once __DIR__ . "/../../classes/Payment.php";
 
 if (($_SERVER["REQUEST_METHOD"] ?? "") !== "POST") {
@@ -16,8 +17,8 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") !== "POST") {
     exit;
 }
 
-$secretKey = getenv("PAYSTACK_SECRET_KEY");
-if (!is_string($secretKey) || $secretKey === "") {
+$secretKey = get_paystack_secret_key();
+if ($secretKey === null) {
     error_log("PAYSTACK_SECRET_KEY is not configured.");
     http_response_code(503);
     echo json_encode([
