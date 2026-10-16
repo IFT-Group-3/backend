@@ -6,9 +6,10 @@ The complete OpenAPI 3.0 specification for the clean API routes is in
 [`openapi.yaml`](./openapi.yaml). Open it in Swagger Editor or import it into
 Swagger UI. To view and try the endpoints in your browser using the bundled
 Swagger UI page, visit `http://localhost/hostel-backend/docs/`. The
-specification uses `http://localhost/hostel-backend` as its development server
-URL; change that URL for other environments. Protected endpoints use the PHP
-session cookie set by `POST /api/auth/login`.
+specification defaults to the hosted API at `https://hostel-system.iceiy.com`;
+select the local XAMPP server in Swagger UI when testing locally. Update the
+server list in `openapi.yaml` for other environments. Protected endpoints use
+the PHP session cookie set by `POST /api/auth/login`.
 
 Authentication uses PHP sessions. Students and admins sign in through the same
 endpoint; the account's `role` in the `users` table determines which middleware
@@ -16,6 +17,19 @@ allows access.
 
 ## Hostel flow
 
+- To add sample facilities for API testing without removing existing data,
+  import [`database/seed_api_test_data.sql`](./database/seed_api_test_data.sql)
+  in phpMyAdmin with `hostel_system` selected. It adds one mixed hostel, two
+  four-bed rooms priced at NGN 1,000 per occupant, their beds, and a 90-day
+  allocation period only if one is not already configured. It can be run again;
+  duplicate rooms and beds are skipped, and an existing allocation period is
+  left unchanged. It does not create student accounts, reservations, or
+  payments. Register a student through `POST /api/auth/register` so the
+  password is stored using the application's password hashing.
+- This seed expects the current schema, including the hostel, bed-space, and
+  allocation-period tables. Do not run destructive migrations just to add test
+  data: migrations `001` and `004` delete existing student data and existing
+  allocations/payments respectively.
 - `GET /api/admin/dashboard` returns overview counts and paginated hostels,
   rooms, beds, students, admin accounts, allocations, payments, and the current
   allocation period. Requires an admin session. Optional query parameters:

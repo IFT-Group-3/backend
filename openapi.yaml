@@ -8,8 +8,10 @@ info:
 
     Authentication uses a PHP session cookie. Sign in with `/api/auth/login`
     and send the returned `PHPSESSID` cookie with subsequent requests.
-    Replace the development server URL below with the deployed API base URL.
+    Select the deployed API or local XAMPP server from Swagger UI's server list.
 servers:
+  - url: https://hostel-system.iceiy.com
+    description: Hosted API
   - url: http://localhost/hostel-backend
     description: Local XAMPP development server
 tags:

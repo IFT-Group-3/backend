@@ -2,10 +2,10 @@
 
 class Database
 {
-    private string $host = "localhost";
-    private string $dbName = "hostel_system";
-    private string $username = "root";
-    private string $password = "";
+    private string $host = "sql208.iceiy.com";
+    private string $dbName = "icei_43194901_hostel_systems";
+    private string $username = "icei_43194901";
+    private string $password = "qwerty1290.";
 
     public function connect(): PDO
     {
