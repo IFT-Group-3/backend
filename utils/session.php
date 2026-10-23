@@ -16,9 +16,9 @@ function start_app_session(): void
 
     session_set_cookie_params([
         "lifetime" => 0,
-        "path" => $params["path"],
-        "domain" => $params["domain"],
-        "secure" => $params["secure"] || $isHttps,
+        "path" => "/",
+        "domain" => "",
+        "secure" => $isHttps,
         "httponly" => true,
         "samesite" => "Lax"
     ]);

@@ -1,6 +1,8 @@
 <?php
 
 header("Content-Type: application/json");
+require_once __DIR__ . "/utils/cors.php";
+handle_api_cors();
 
 $requestPath = parse_url($_SERVER["REQUEST_URI"] ?? "/", PHP_URL_PATH);
 if (!is_string($requestPath)) {

@@ -9,6 +9,8 @@ info:
     Authentication uses a PHP session cookie. Sign in with `/api/auth/login`
     and send the returned `PHPSESSID` cookie with subsequent requests.
     Select the deployed API or local XAMPP server from Swagger UI's server list.
+    The local API allows credentialed CORS requests from `http://localhost:8000`;
+    browser clients must include credentials on login and protected requests.
 servers:
   - url: https://hostel-system.iceiy.com
     description: Hosted API
@@ -1132,14 +1134,59 @@ components:
           example: true
         allocation_period:
           allOf:
-            - $ref: '#/components/schemas/AllocationPeriodRequest'
+            - $ref: '#/components/schemas/DashboardAllocationPeriod'
           nullable: true
         summary:
           type: object
-          description: Numeric dashboard summary, including counts and paid totals.
-          additionalProperties: true
+          required:
+            - students
+            - admins
+            - hostels
+            - rooms
+            - bed_spaces
+            - confirmed_allocations
+            - active_reservations
+            - expired_pending_allocations
+            - paid_payments
+            - pending_payments
+            - failed_payments
+            - total_paid_kobo
+            - total_paid_ngn
+            - currency
+          properties:
+            students:
+              type: integer
+            admins:
+              type: integer
+            hostels:
+              type: integer
+            rooms:
+              type: integer
+            bed_spaces:
+              type: integer
+            confirmed_allocations:
+              type: integer
+            active_reservations:
+              type: integer
+            expired_pending_allocations:
+              type: integer
+            paid_payments:
+              type: integer
+            pending_payments:
+              type: integer
+            failed_payments:
+              type: integer
+            total_paid_kobo:
+              type: integer
+            total_paid_ngn:
+              type: string
+              example: '150000.00'
+            currency:
+              type: string
+              enum: [NGN]
         pagination:
           type: object
+          required: [page, per_page, totals]
           properties:
             page:
               type: integer
@@ -1147,8 +1194,23 @@ components:
               type: integer
             totals:
               type: object
-              additionalProperties:
-                type: integer
+              description: Full row counts; bed_spaces corresponds to the beds array.
+              required: [hostels, rooms, bed_spaces, students, allocations, payments, admins]
+              properties:
+                hostels:
+                  type: integer
+                rooms:
+                  type: integer
+                bed_spaces:
+                  type: integer
+                students:
+                  type: integer
+                allocations:
+                  type: integer
+                payments:
+                  type: integer
+                admins:
+                  type: integer
         hostels:
           type: array
           items:
@@ -1156,30 +1218,276 @@ components:
         rooms:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/DashboardRoom'
         beds:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/DashboardBed'
         students:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/DashboardStudent'
         admins:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/DashboardAdmin'
         allocations:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/DashboardAllocation'
         payments:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/DashboardPayment'
+    DashboardAllocationPeriod:
+      type: object
+      required: [start_date, end_date, updated_at]
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        updated_at:
+          type: string
+          format: date-time
+    DashboardRoom:
+      type: object
+      required: [room_id, hostel_id, hostel_name, hostel_type, building_code, floor_number, room_number, max_occupants, price_per_occupant, status, created_at, total_beds, occupied_beds, available_beds]
+      properties:
+        room_id:
+          type: integer
+        hostel_id:
+          type: integer
+        hostel_name:
+          type: string
+        hostel_type:
+          type: string
+          enum: [Male, Female, Mixed]
+        building_code:
+          type: string
+        floor_number:
+          type: integer
+        room_number:
+          type: string
+        max_occupants:
+          type: integer
+        price_per_occupant:
+          type: string
+        status:
+          type: string
+          enum: [Available, Unavailable]
+        created_at:
+          type: string
+          format: date-time
+        total_beds:
+          type: integer
+        occupied_beds:
+          type: integer
+        available_beds:
+          type: integer
+    DashboardBed:
+      type: object
+      required: [bed_id, bed_number, room_id, hostel_id, hostel_name, building_code, floor_number, room_number, allocation_id, allocation_status, start_date, end_date, expires_at, student_id, matric_number, first_name, last_name, student_email, status]
+      properties:
+        bed_id:
+          type: integer
+        bed_number:
+          type: string
+        room_id:
+          type: integer
+        hostel_id:
+          type: integer
+        hostel_name:
+          type: string
+        building_code:
+          type: string
+        floor_number:
+          type: integer
+        room_number:
+          type: string
+        allocation_id:
+          type: integer
+          nullable: true
+        allocation_status:
+          type: string
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        student_id:
+          type: integer
+          nullable: true
+        matric_number:
+          type: string
+          nullable: true
+        first_name:
+          type: string
+          nullable: true
+        last_name:
+          type: string
+          nullable: true
+        student_email:
+          type: string
+          nullable: true
+        status:
+          type: string
+          description: Current allocation state, or Available when the bed has no current allocation.
+    DashboardStudent:
+      type: object
+      required: [student_id, user_id, matric_number, first_name, last_name, email, phone, department, level, gender, created_at]
+      properties:
+        student_id:
+          type: integer
+        user_id:
+          type: integer
+        matric_number:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        department:
+          type: string
+        level:
+          type: integer
+        gender:
+          type: string
+          enum: [Male, Female]
+        created_at:
+          type: string
+          format: date-time
+    DashboardAdmin:
+      type: object
+      required: [user_id, email, created_at]
+      properties:
+        user_id:
+          type: integer
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+    DashboardAllocation:
+      type: object
+      required: [allocation_id, user_id, matric_number, first_name, last_name, student_email, room_id, hostel_name, building_code, floor_number, room_number, bed_id, bed_number, start_date, end_date, status, expires_at, created_at, confirmed_at, current_status]
+      properties:
+        allocation_id:
+          type: integer
+        user_id:
+          type: integer
+        matric_number:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        student_email:
+          type: string
+          format: email
+        room_id:
+          type: integer
+        hostel_name:
+          type: string
+        building_code:
+          type: string
+        floor_number:
+          type: integer
+        room_number:
+          type: string
+        bed_id:
+          type: integer
+        bed_number:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [Pending, Confirmed, Cancelled, Expired]
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        current_status:
+          type: string
+          enum: [Pending, Confirmed, Cancelled, Expired]
+    DashboardPayment:
+      type: object
+      required: [payment_id, allocation_id, reference, amount_kobo, amount_ngn, status, gateway_reference, created_at, updated_at, matric_number, first_name, last_name, student_email, hostel_name, building_code, floor_number, room_number, bed_number, start_date, end_date]
+      properties:
+        payment_id:
+          type: integer
+        allocation_id:
+          type: integer
+        reference:
+          type: string
+        amount_kobo:
+          type: integer
+        amount_ngn:
+          type: string
+          example: '75000.00'
+        status:
+          type: string
+          enum: [Pending, Paid, Failed]
+        gateway_reference:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        matric_number:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        student_email:
+          type: string
+          format: email
+        hostel_name:
+          type: string
+        building_code:
+          type: string
+        floor_number:
+          type: integer
+        room_number:
+          type: string
+        bed_number:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
