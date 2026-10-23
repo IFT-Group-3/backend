@@ -23,6 +23,17 @@ cookie. The cookie is host-only, has path `/`, and uses `SameSite=Lax` and
 `localhost` on ports 8000 and 80 is same-site, so `SameSite=Lax` works for this
 local setup.
 
+The local database defaults are XAMPP's `127.0.0.1`, database `hostel_system`,
+user `root`, and an empty password. To override these, copy
+`config/database.example.php` to `config/database.local.php` and enter the local
+database settings, or set `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` in
+the PHP server environment. Environment variables take precedence over the
+local file. `config/database.local.php` is git-ignored and the `config/`
+directory must not be exposed by the web server. Ensure MySQL is running and
+the configured database and schema exist. On connection failure, API requests
+return JSON with HTTP 500; the detailed PDO error is written to the PHP server
+error log, not returned to the client.
+
 ## Hostel flow
 
 - To add sample facilities for API testing without removing existing data,

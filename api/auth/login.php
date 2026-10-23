@@ -45,15 +45,23 @@ if (
 
 $email = trim($email);
 
-$database = new Database();
-$db = $database->connect();
+try {
+    $database = new Database();
+    $db = $database->connect();
 
-$auth = new Auth($db);
+    $auth = new Auth($db);
+    $result = $auth->login($email, $password);
 
-$result = $auth->login($email, $password);
+    if (!$result["success"]) {
+        http_response_code(401);
+    }
 
-if (!$result["success"]) {
-    http_response_code(401);
+    echo json_encode($result);
+} catch (Throwable $error) {
+    error_log("Login failed: " . $error->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to log in."
+    ]);
 }
-
-echo json_encode($result);

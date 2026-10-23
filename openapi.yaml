@@ -181,6 +181,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /api/auth/logout:
     post:
       tags: [Authentication]
