@@ -2,10 +2,20 @@
 
 class Database
 {
-    private string $host = "sql208.iceiy.com";
-    private string $dbName = "icei_43194901_hostel_systems";
-    private string $username = "icei_43194901";
-    private string $password = "qwerty1290.";
+    private string $host;
+    private string $dbName;
+    private string $username;
+    private string $password;
+
+    public function __construct()
+    {
+        require_once __DIR__ . "/env.php";
+
+        $this->host = environment_value("DB_HOST", "127.0.0.1");
+        $this->dbName = environment_value("DB_NAME", "hostel_system");
+        $this->username = environment_value("DB_USERNAME", "root");
+        $this->password = environment_value("DB_PASSWORD", "");
+    }
 
     public function connect(): PDO
     {

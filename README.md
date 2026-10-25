@@ -1,5 +1,24 @@
 # Hostel backend
 
+## Local environment configuration
+
+The backend loads configuration from `backend/.env`. Copy the following
+settings into that file for a default XAMPP installation:
+
+```dotenv
+DB_HOST=127.0.0.1
+DB_NAME=hostel_system
+DB_USERNAME=root
+DB_PASSWORD=
+PAYSTACK_SECRET_KEY=
+```
+
+Change `DB_PASSWORD` if your local MySQL `root` account has a password. The
+database connection falls back to these same local defaults when a setting is
+missing. Server environment variables take precedence over values in `.env`.
+Keep `.env` out of source control and never place frontend or production
+secrets in it.
+
 ## API documentation
 
 The complete OpenAPI 3.0 specification for the clean API routes is in

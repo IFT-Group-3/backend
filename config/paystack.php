@@ -1,8 +1,10 @@
 <?php
 
+require_once __DIR__ . "/env.php";
+
 function get_paystack_secret_key(): ?string
 {
-    $secretKey = getenv("PAYSTACK_SECRET_KEY");
+    $secretKey = environment_value("PAYSTACK_SECRET_KEY");
     if (is_string($secretKey) && $secretKey !== "") {
         return $secretKey;
     }
