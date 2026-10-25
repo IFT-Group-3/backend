@@ -1,52 +1,30 @@
 <?php
 
+require_once __DIR__ . "/env.php";
+
 class Database
 {
-    private string $host;
-    private string $dbName;
-    private string $username;
-    private string $password;
-
-    public function __construct()
-    {
-        require_once __DIR__ . "/env.php";
-
-        $this->host = environment_value("DB_HOST", "127.0.0.1");
-        $this->dbName = environment_value("DB_NAME", "hostel_system");
-        $this->username = environment_value("DB_USERNAME", "root");
-        $this->password = environment_value("DB_PASSWORD", "");
-    }
-
     public function connect(): PDO
     {
+        $host = get_env("DB_HOST", "127.0.0.1");
+        $dbName = get_env("DB_NAME", "hostel_system");
+        $username = get_env("DB_USERNAME", "root");
+        $password = get_env("DB_PASSWORD", "");
+
+        if (
+            !is_string($host)
+            || trim($host) === ""
+            || !is_string($dbName)
+            || trim($dbName) === ""
+            || !is_string($username)
+            || trim($username) === ""
+            || !is_string($password)
+        ) {
+            throw new RuntimeException("Database environment variables are invalid.");
+        }
+
         try {
-            $localConfigPath = __DIR__ . "/database.local.php";
-            $localConfig = is_file($localConfigPath)
-                ? require $localConfigPath
-                : [];
-
-            if (!is_array($localConfig)) {
-                throw new RuntimeException("Database config must return an array.");
-            }
-
-            $host = getenv("DB_HOST") ?: ($localConfig["host"] ?? "127.0.0.1");
-            $dbName = getenv("DB_NAME") ?: ($localConfig["name"] ?? "hostel_system");
-            $username = getenv("DB_USER") ?: ($localConfig["user"] ?? "root");
-            $password = getenv("DB_PASSWORD");
-            if ($password === false) {
-                $password = $localConfig["password"] ?? "";
-            }
-
-            foreach (["DB_HOST" => $host, "DB_NAME" => $dbName, "DB_USER" => $username] as $name => $value) {
-                if (!is_string($value) || trim($value) === "") {
-                    throw new RuntimeException($name . " must be a non-empty string.");
-                }
-            }
-            if (!is_string($password)) {
-                throw new RuntimeException("DB_PASSWORD must be a string.");
-            }
-
-            $pdo = new PDO(
+            return new PDO(
                 "mysql:host={$host};dbname={$dbName};charset=utf8mb4",
                 $username,
                 $password,
@@ -55,17 +33,9 @@ class Database
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
                 ]
             );
-
-            return $pdo;
-        } catch (Throwable $error) {
+        } catch (PDOException $error) {
             error_log("Database connection failed: " . $error->getMessage());
-            http_response_code(500);
-            header("Content-Type: application/json");
-            echo json_encode([
-                "success" => false,
-                "message" => "Database connection failed. Check the server configuration and logs."
-            ]);
-            exit;
+            throw new RuntimeException("Database connection failed.", 0, $error);
         }
     }
 }

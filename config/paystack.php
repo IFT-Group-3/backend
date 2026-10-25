@@ -4,9 +4,9 @@ require_once __DIR__ . "/env.php";
 
 function get_paystack_secret_key(): ?string
 {
-    $secretKey = environment_value("PAYSTACK_SECRET_KEY");
-    if (is_string($secretKey) && $secretKey !== "") {
-        return $secretKey;
+    $secretKey = get_env("PAYSTACK_SECRET_KEY");
+    if (is_string($secretKey) && trim($secretKey) !== "") {
+        return trim($secretKey);
     }
 
     $secretsFile = __DIR__ . "/secrets.php";
@@ -19,10 +19,10 @@ function get_paystack_secret_key(): ?string
         !is_array($secrets)
         || !isset($secrets["PAYSTACK_SECRET_KEY"])
         || !is_string($secrets["PAYSTACK_SECRET_KEY"])
-        || $secrets["PAYSTACK_SECRET_KEY"] === ""
+        || trim($secrets["PAYSTACK_SECRET_KEY"]) === ""
     ) {
         throw new RuntimeException("PAYSTACK_SECRET_KEY is missing from config/secrets.php.");
     }
 
-    return $secrets["PAYSTACK_SECRET_KEY"];
+    return trim($secrets["PAYSTACK_SECRET_KEY"]);
 }

@@ -20,7 +20,8 @@ if (!is_array($data)) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
-        "message" => "A valid JSON request body is required."
+        "message" => "A valid JSON request body is required.",
+        "json_error" => json_last_error_msg()
     ]);
     exit;
 }

@@ -63,10 +63,15 @@ function load_environment(): void
     }
 }
 
-function environment_value(string $name, ?string $default = null): ?string
+function get_env(string $name, ?string $default = null): ?string
 {
     load_environment();
 
     $value = getenv($name);
     return $value === false ? $default : $value;
+}
+
+function environment_value(string $name, ?string $default = null): ?string
+{
+    return get_env($name, $default);
 }
