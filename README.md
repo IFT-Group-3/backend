@@ -34,6 +34,25 @@ Authentication uses PHP sessions. Students and admins sign in through the same
 endpoint; the account's `role` in the `users` table determines which middleware
 allows access.
 
+The local frontend at `http://localhost:8000` is allowed by credentialed CORS
+on the API front controller. Browser requests must use `credentials: "include"`
+(or `withCredentials: true`) so the browser stores and sends the session
+cookie. The cookie is host-only, has path `/`, and uses `SameSite=Lax` and
+`HttpOnly`; `Secure` is enabled for HTTPS and disabled for local HTTP.
+`localhost` on ports 8000 and 80 is same-site, so `SameSite=Lax` works for this
+local setup.
+
+The local database defaults are XAMPP's `127.0.0.1`, database `hostel_system`,
+user `root`, and an empty password. To override these, copy
+`config/database.example.php` to `config/database.local.php` and enter the local
+database settings, or set `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` in
+the PHP server environment. Environment variables take precedence over the
+local file. `config/database.local.php` is git-ignored and the `config/`
+directory must not be exposed by the web server. Ensure MySQL is running and
+the configured database and schema exist. On connection failure, API requests
+return JSON with HTTP 500; the detailed PDO error is written to the PHP server
+error log, not returned to the client.
+
 ## Hostel flow
 
 - To add sample facilities for API testing without removing existing data,
@@ -53,8 +72,15 @@ allows access.
   rooms, beds, students, admin accounts, allocations, payments, and the current
   allocation period. Requires an admin session. Optional query parameters:
   `page` (default `1`, maximum `1000000`) and `per_page` (default `50`, maximum
-  `100`); pagination applies to each returned collection. Password hashes are
-  never included.
+  `100`); pagination applies to each returned collection. For example,
+  `/api/admin/dashboard?page=2&per_page=100` requests the next page. The
+  top-level response fields are `success`, `allocation_period`, `summary`,
+  `pagination`, `hostels`, `rooms`, `beds`, `students`, `admins`, `allocations`,
+  and `payments`. `pagination` contains `page`, `per_page`, and `totals`, which
+  reports full row counts keyed by collection (`bed_spaces` is the count for
+  the `beds` array). Fetch subsequent pages by incrementing `page`; each
+  collection contains at most `per_page` records. Password hashes are never
+  included.
 - `POST /api/admin/hostels` creates a hostel and requires an admin session.
   Submit `multipart/form-data` fields `hostel_name`, `hostel_type` (`Male`,
   `Female`, or `Mixed`), `location`, optional `description`, optional
@@ -128,8 +154,11 @@ database stores their relative path in `image_path`.
 
 - `POST /api/auth/bootstrap-admin` creates the first admin only, and only when
   the request comes from localhost. It returns HTTP 409 once any admin account
-  exists. Use it once from the machine running Apache, then remove the
-  bootstrap route and endpoint file.
+  exists. To create a working admin, call it once from the machine running
+  Apache with an email and a unique password of 8-72 characters, then use those
+  credentials with `POST /api/auth/login`. Bootstrap does not log the account
+  in. Remove the bootstrap route and endpoint file after initial setup. This
+  repository does not provide a default admin password.
 - `POST /api/auth/register` creates a student account. Required JSON fields are
   `email`, `password`, `matric_number`, `first_name`, `last_name`, `department`,
   `level`, and `gender` (`Male` or `Female`). `phone` is optional. Passwords
