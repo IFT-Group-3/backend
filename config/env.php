@@ -57,8 +57,11 @@ function load_environment(): void
         }
 
         if (getenv($name) === false) {
-            putenv($name . "=" . $value);
+            // Keep our own copy: some shared hosts disable putenv().
             $_ENV[$name] = $value;
+            if (function_exists("putenv")) {
+                @putenv($name . "=" . $value);
+            }
         }
     }
 }
@@ -68,6 +71,10 @@ function get_env(string $name, ?string $default = null): ?string
     load_environment();
 
     $value = getenv($name);
+    if ($value === false && isset($_ENV[$name]) && is_string($_ENV[$name])) {
+        $value = $_ENV[$name];
+    }
+
     return $value === false ? $default : $value;
 }
 

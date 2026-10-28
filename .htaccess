@@ -2,8 +2,21 @@ RewriteEngine On
 
 AddType application/yaml .yaml
 
+# api/hostels is also a real folder; stop Apache redirecting /api/hostels to /api/hostels/.
+DirectorySlash Off
+Options -Indexes
+
+# Show the real 404 page for missing pages instead of the API's JSON error.
+ErrorDocument 404 /404.html
+
+# Never serve secrets, source folders, database dumps or git data over the web.
+RewriteRule ^(\.env|\.git|\.vscode|database|classes|middlewares|utils|config)(/|$) - [F,L]
+RewriteRule ^\.env - [F,L]
+RewriteRule \.(sql|docx|md|example\.php)$ - [F,L]
+
 RewriteRule ^api/hostels/?$ index.php [QSA,L]
 
+# Only API paths fall through to the PHP front controller.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+RewriteRule ^api(/|$) index.php [QSA,L]

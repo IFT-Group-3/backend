@@ -43,14 +43,32 @@ class Auth
         $_SESSION["email"] = $user["email"];
         $_SESSION["role"] = $user["role"];
 
+        $profile = [
+            "id" => $user["user_id"],
+            "email" => $user["email"],
+            "role" => $user["role"]
+        ];
+
+        if ($user["role"] === "student") {
+            $studentStmt = $this->db->prepare(
+                "SELECT first_name, last_name, matric_number
+                 FROM students
+                 WHERE user_id = :user_id
+                 LIMIT 1"
+            );
+            $studentStmt->execute(["user_id" => $user["user_id"]]);
+            $student = $studentStmt->fetch();
+
+            if ($student) {
+                $profile["name"] = trim($student["first_name"] . " " . $student["last_name"]);
+                $profile["matric_no"] = $student["matric_number"];
+            }
+        }
+
         return [
             "success" => true,
             "message" => "Login successful.",
-            "user" => [
-                "id" => $user["user_id"],
-                "email" => $user["email"],
-                "role" => $user["role"]
-            ]
+            "user" => $profile
         ];
     }
 

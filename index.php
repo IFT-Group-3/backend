@@ -70,6 +70,10 @@ $routes = [
         "method" => "POST",
         "file" => __DIR__ . "/api/allocations/create.php"
     ],
+    "/api/allocations/mine" => [
+        "method" => "GET",
+        "file" => __DIR__ . "/api/allocations/mine.php"
+    ],
     "/api/payments/process" => [
         "method" => "POST",
         "file" => __DIR__ . "/api/payments/process.php"
